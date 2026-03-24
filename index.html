@@ -1120,9 +1120,15 @@
       .hero-moonshot { display: flex; justify-content: center; }
       .hero-vbars { display: flex; justify-content: center; }
     }
+    /* ── JS-gated pre-hide (prevents flash before animation) ───────── */
+    .js .feat-card,
+    .js .step,
+    .js .metric-card,
+    .js .testi-card { opacity: 0; }
   </style>
 </head>
 <body>
+<script>document.documentElement.classList.add('js');</script>
 
   <!-- ── NAV ──────────────────────────────────────────────────────── -->
   <nav id="main-nav">
