@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lunar Grid: Google Ads at Scale</title>
+  <meta name="description" content="Turn your location database into production-ready Google Ads CSV files. Smart templates, variant fallbacks, and bulk export for Google Ads Editor." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Tokens ──────────────────────────────────────────────────────── */
+    :root {
+      --scarlet:      #E63946;
+      --saffron:      #F4A261;
+      --blue:         #457B9D;
+      --emerald:      #2A9D8F;
+      --navy:         #1A2544;
+      --navy-deep:    #111C35;
+      --cream:        #FAF8F4;
+      --white:        #FFFFFF;
+      --text:         #1A2544;
+      --text-muted:   #6B7694;
+      --border:       #E2DDD8;
+      --font:         'Manrope', sans-serif;
+      --font-mono:    'JetBrains Mono', monospace;
+      --nav-h:        68px;
+    }
+
+    /* ── Reset ───────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      font-family: var(--font);
+      background: var(--cream);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    ul { list-style: none; }
+    img { display: block; }
+
+    /* ── Velocity Bars ───────────────────────────────────────────────── */
+    .vbars {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .vbar {
+      height: 4px;
+      border-radius: 0;
+      transform-origin: left;
+      transform: scaleX(0);
+    }
+    .vbar-1 { background: var(--scarlet); width: 100%; }
+    .vbar-2 { background: var(--saffron); width: 78%; }
+    .vbar-3 { background: var(--blue);    width: 58%; }
+    .vbar-4 { background: var(--emerald); width: 40%; }
+
+    .vbars-sm .vbar { height: 3px; }
+    .vbars-sm .vbar-2 { width: 75%; }
+    .vbars-sm .vbar-3 { width: 55%; }
+    .vbars-sm .vbar-4 { width: 38%; }
+
+    /* ── NAV ─────────────────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--nav-h);
+      z-index: 100;
+      background: rgba(250, 248, 244, 0.94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      opacity: 0;
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 32px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Logo */
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+    .logo-bars-icon {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      width: 22px;
+    }
+    .logo-bars-icon span {
+      display: block;
+      height: 3px;
+      border-radius: 0;
+    }
+    .logo-bars-icon span:nth-child(1) { background: var(--scarlet); width: 100%; }
+    .logo-bars-icon span:nth-child(2) { background: var(--saffron); width: 80%; }
+    .logo-bars-icon span:nth-child(3) { background: var(--blue);    width: 60%; }
+    .logo-bars-icon span:nth-child(4) { background: var(--emerald); width: 42%; }
+
+    .logo-text {
+      font-family: var(--font);
+      font-weight: 900;
+      font-size: 1.1rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+    .logo-lunar { color: var(--navy); }
+    .logo-grid  { color: var(--scarlet); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 36px;
+    }
+    .nav-links a {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font);
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      text-decoration: none;
+      white-space: nowrap;
+      border-radius: 0;
+    }
+    .btn-scarlet {
+      background: var(--scarlet);
+      color: #fff;
+      padding: 11px 24px;
+      font-size: 0.875rem;
+      letter-spacing: 0.03em;
+    }
+    .btn-scarlet:hover { background: #cc2f3b; transform: translateY(-1px); }
+
+    .btn-lg {
+      padding: 16px 36px;
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+    }
+    .btn-outline-dark {
+      background: transparent;
+      color: var(--navy);
+      border: 2px solid var(--navy);
+      padding: 14px 34px;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .btn-outline-dark:hover { background: var(--navy); color: #fff; }
+
+    .btn-outline-white {
+      background: transparent;
+      color: #fff;
+      border: 2px solid rgba(255,255,255,0.5);
+      padding: 14px 34px;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .btn-outline-white:hover { border-color: #fff; }
+
+    /* ── Layout Helpers ──────────────────────────────────────────────── */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 32px;
+      position: relative;
+    }
+    .section     { padding: 100px 0; }
+    .section-sm  { padding: 64px 0; }
+
+    /* ── Eyebrow ─────────────────────────────────────────────────────── */
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+    .eyebrow::before {
+      content: '';
+      display: block;
+      width: 20px;
+      height: 2px;
+      background: var(--scarlet);
+    }
+
+    /* ── HERO ────────────────────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: calc(var(--nav-h) + 60px) 0 80px;
+      background: var(--cream);
+      overflow: hidden;
+    }
+    .hero-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--scarlet);
+      font-weight: 500;
+      margin-bottom: 28px;
+      opacity: 0;
+    }
+    .hero-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--scarlet);
+      border-radius: 50%;
+    }
+    .hero-title {
+      font-size: clamp(2.6rem, 5.5vw, 4.4rem);
+      font-weight: 900;
+      line-height: 1.0;
+      letter-spacing: -0.03em;
+      color: var(--navy);
+      margin-bottom: 28px;
+      overflow: hidden;
+    }
+    .hero-title-line {
+      display: block;
+      overflow: hidden;
+    }
+    .hero-word {
+      display: inline-block;
+      opacity: 0;
+    }
+    .hero-accent { color: var(--scarlet); }
+
+    .hero-vbars {
+      margin-bottom: 32px;
+    }
+
+    .hero-sub {
+      font-size: 1.0625rem;
+      line-height: 1.75;
+      color: var(--text-muted);
+      font-weight: 400;
+      max-width: 460px;
+      margin-bottom: 40px;
+      opacity: 0;
+    }
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      opacity: 0;
+    }
+    .hero-note {
+      margin-top: 20px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      opacity: 0;
+    }
+    .hero-note span { color: var(--emerald); font-weight: 600; }
+
+    /* ── Hero Visual Card ────────────────────────────────────────────── */
+    .hero-card {
+      background: var(--navy);
+      border: none;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(26, 37, 68, 0.28), 0 8px 24px rgba(26,37,68,0.12);
+      opacity: 0;
+    }
+    .hero-card-bars {
+      display: flex;
+    }
+    .hero-card-bars span {
+      height: 5px;
+      flex: 1;
+    }
+    .hero-card-bars span:nth-child(1) { background: var(--scarlet); }
+    .hero-card-bars span:nth-child(2) { background: var(--saffron); }
+    .hero-card-bars span:nth-child(3) { background: var(--blue); }
+    .hero-card-bars span:nth-child(4) { background: var(--emerald); }
+
+    .hero-card-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .hero-card-label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .hero-card-tag {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--emerald);
+      background: rgba(42, 157, 143, 0.12);
+      border: 1px solid rgba(42, 157, 143, 0.25);
+      padding: 3px 8px;
+      letter-spacing: 0.06em;
+      font-weight: 500;
+    }
+
+    .hero-card-body { padding: 20px 24px; }
+
+    .hc-section-label {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.28);
+      margin-bottom: 10px;
+      font-weight: 400;
+    }
+    .hc-template {
+      background: rgba(255,255,255,0.04);
+      border-left: 3px solid var(--saffron);
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.85);
+      line-height: 1.6;
+    }
+    .hc-ph { color: var(--saffron); font-weight: 500; }
+    .hc-dim { color: rgba(255,255,255,0.35); font-size: 0.72rem; }
+
+    .hc-arrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .hc-arrow-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.15), transparent);
+    }
+    .hc-arrow-text {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0.06em;
+    }
+    .hc-badge {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      background: rgba(244, 162, 97, 0.15);
+      color: var(--saffron);
+      border: 1px solid rgba(244,162,97,0.3);
+      padding: 2px 8px;
+    }
+
+    .hc-rows { display: flex; flex-direction: column; gap: 4px; }
+    .hc-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 12px;
+      background: rgba(255,255,255,0.03);
+      border-left: 2px solid transparent;
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.7);
+      font-weight: 400;
+      opacity: 0;
+    }
+    .hc-row.active-row { border-left-color: var(--emerald); background: rgba(42,157,143,0.06); }
+    .hc-ok {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--emerald);
+      font-weight: 600;
+    }
+
+    .hc-more {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.22);
+      padding: 10px 0 4px;
+      letter-spacing: 0.04em;
+    }
+
+    .hero-card-footer {
+      padding: 14px 24px;
+      background: rgba(0,0,0,0.2);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .hc-stat {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.35);
+    }
+    .hc-stat strong { color: rgba(255,255,255,0.75); font-weight: 600; }
+
+    /* ── Trust Bar ───────────────────────────────────────────────────── */
+    .trust-bar {
+      background: var(--navy);
+      padding: 28px 0;
+    }
+    .trust-bar-inner {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .trust-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+    }
+    .trust-divider {
+      width: 1px;
+      height: 18px;
+      background: rgba(255,255,255,0.1);
+    }
+    .trust-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 0.02em;
+      padding: 6px 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .trust-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+    }
+
+    /* ── Section Header ──────────────────────────────────────────────── */
+    .section-header {
+      max-width: 580px;
+    }
+    .section-header.center {
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .section-header.center .eyebrow { justify-content: center; }
+
+    .section-header h2 {
+      font-size: clamp(1.75rem, 3vw, 2.5rem);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -0.025em;
+      color: inherit;
+      margin-bottom: 16px;
+    }
+    .section-header p {
+      font-size: 0.95rem;
+      line-height: 1.75;
+      color: inherit;
+      opacity: 0.65;
+    }
+
+    /* ── FEATURES ────────────────────────────────────────────────────── */
+    .features-section {
+      background: var(--navy);
+      padding: 100px 0;
+      color: #fff;
+    }
+    .features-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 40px;
+      margin-bottom: 56px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: rgba(255,255,255,0.06);
+    }
+    .feat-card {
+      background: var(--navy);
+      padding: 36px 32px;
+      border-top: 3px solid transparent;
+      transition: background 0.25s, transform 0.25s;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+    }
+    .feat-card:hover { background: #1f2d57; }
+    .feat-card:nth-child(1) { border-top-color: var(--scarlet); }
+    .feat-card:nth-child(2) { border-top-color: var(--saffron); }
+    .feat-card:nth-child(3) { border-top-color: var(--blue); }
+    .feat-card:nth-child(4) { border-top-color: var(--emerald); }
+    .feat-card:nth-child(5) { border-top-color: var(--scarlet); }
+    .feat-card:nth-child(6) { border-top-color: var(--saffron); }
+
+    .feat-card-num {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.2);
+      letter-spacing: 0.1em;
+      margin-bottom: 24px;
+      font-weight: 500;
+    }
+    .feat-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .feat-card h3 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+    .feat-card p {
+      font-size: 0.85rem;
+      line-height: 1.7;
+      color: rgba(255,255,255,0.48);
+      font-weight: 400;
+    }
+    .feat-card .code-tag {
+      font-family: var(--font-mono);
+      font-size: 0.8em;
+      color: var(--saffron);
+      background: rgba(244,162,97,0.1);
+      padding: 1px 5px;
+    }
+
+    /* ── HOW IT WORKS ────────────────────────────────────────────────── */
+    .how-section { background: var(--cream); padding: 100px 0; }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      margin-top: 64px;
+      background: var(--border);
+    }
+    .step {
+      background: var(--cream);
+      padding: 48px 40px;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+    }
+    .step-num-bg {
+      position: absolute;
+      top: -20px;
+      right: 20px;
+      font-size: 10rem;
+      font-weight: 900;
+      letter-spacing: -0.05em;
+      line-height: 1;
+      color: var(--navy);
+      opacity: 0.04;
+      pointer-events: none;
+      user-select: none;
+    }
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 24px;
+      position: relative;
+    }
+    .step:nth-child(1) .step-badge { background: var(--scarlet); color: #fff; }
+    .step:nth-child(2) .step-badge { background: var(--saffron); color: #fff; }
+    .step:nth-child(3) .step-badge { background: var(--blue);    color: #fff; }
+
+    .step h3 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 12px;
+      letter-spacing: -0.015em;
+    }
+    .step p {
+      font-size: 0.875rem;
+      line-height: 1.75;
+      color: var(--text-muted);
+    }
+    .step .code-tag {
+      font-family: var(--font-mono);
+      font-size: 0.8em;
+      color: var(--blue);
+      background: rgba(69,123,157,0.1);
+      padding: 1px 5px;
+    }
+
+    /* ── Feature Details ─────────────────────────────────────────────── */
+    .fd-section { padding: 100px 0; }
+    .fd-section.bg-white { background: var(--white); }
+    .fd-section.bg-cream { background: var(--cream); }
+
+    .fd-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .fd-text .eyebrow { color: var(--text-muted); }
+    .fd-text h3 {
+      font-size: clamp(1.4rem, 2.5vw, 1.9rem);
+      font-weight: 900;
+      color: var(--navy);
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .fd-text p {
+      font-size: 0.9rem;
+      line-height: 1.8;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+    .fd-bullets {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .fd-bullets li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .fd-bullets li::before {
+      content: '';
+      display: block;
+      width: 16px;
+      height: 3px;
+      background: var(--scarlet);
+      flex-shrink: 0;
+      margin-top: 8px;
+    }
+
+    /* Variant Visual */
+    .variant-visual {
+      background: var(--white);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .bg-cream .variant-visual { background: var(--white); }
+
+    .vv-header {
+      background: var(--navy);
+      padding: 0;
+    }
+    .vv-header-bars {
+      display: flex;
+    }
+    .vv-header-bars span {
+      height: 4px;
+      flex: 1;
+    }
+    .vv-header-bars span:nth-child(1) { background: var(--scarlet); }
+    .vv-header-bars span:nth-child(2) { background: var(--saffron); }
+    .vv-header-bars span:nth-child(3) { background: var(--blue); }
+    .vv-header-bars span:nth-child(4) { background: var(--emerald); }
+    .vv-header-label {
+      padding: 12px 20px;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .vv-body { padding: 20px; }
+    .vv-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-left: 3px solid transparent;
+      margin-bottom: 6px;
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+      background: var(--cream);
+    }
+    .vv-row.active { border-left-color: var(--blue); background: rgba(69,123,157,0.06); }
+    .vv-row-label { font-size: 0.65rem; color: var(--text-muted); margin-right: 8px; }
+    .vv-row-active-label { font-size: 0.65rem; color: var(--blue); margin-right: 8px; }
+    .vv-row-text { color: var(--navy); font-weight: 500; flex: 1; }
+    .vv-bar-wrap { width: 80px; height: 3px; background: var(--border); margin: 0 12px; }
+    .vv-bar { height: 100%; background: var(--navy); }
+    .vv-tag {
+      font-size: 0.6rem;
+      font-family: var(--font);
+      font-weight: 700;
+      padding: 2px 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .vv-tag.ok  { background: rgba(42,157,143,0.12); color: var(--emerald); }
+    .vv-tag.use { background: rgba(69,123,157,0.12); color: var(--blue); }
+    .vv-note {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: var(--cream);
+      border-top: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+
+    /* Ad Preview Visual */
+    .adp-visual {
+      background: var(--white);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .adp-header {
+      background: var(--navy);
+    }
+    .adp-header-bars {
+      display: flex;
+    }
+    .adp-header-bars span { height: 4px; flex: 1; }
+    .adp-header-bars span:nth-child(1) { background: var(--scarlet); }
+    .adp-header-bars span:nth-child(2) { background: var(--saffron); }
+    .adp-header-bars span:nth-child(3) { background: var(--blue); }
+    .adp-header-bars span:nth-child(4) { background: var(--emerald); }
+    .adp-header-label {
+      padding: 12px 20px;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .adp-body { padding: 20px; background: #fff; display: flex; flex-direction: column; gap: 0; }
+    .google-ad {
+      padding: 12px 0;
+      border-bottom: 1px solid #e8eaed;
+    }
+    .google-ad:last-child { border-bottom: none; }
+    .ad-header-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+    .ad-badge {
+      font-size: 10px;
+      border: 1px solid #006621;
+      color: #006621;
+      padding: 1px 4px;
+      font-family: Arial, sans-serif;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    .ad-url { font-size: 11px; color: #4d5156; font-family: Arial, sans-serif; }
+    .ad-title { font-size: 15px; color: #1a0dab; font-family: Arial, sans-serif; margin-bottom: 2px; }
+    .ad-desc  { font-size: 12px; color: #4d5156; font-family: Arial, sans-serif; line-height: 1.5; }
+
+    /* ── METRICS ─────────────────────────────────────────────────────── */
+    .metrics-section {
+      background: var(--scarlet);
+      padding: 80px 0;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      background: rgba(255,255,255,0.12);
+    }
+    .metric-card {
+      background: var(--scarlet);
+      padding: 56px 40px;
+      text-align: center;
+      border-right: 1px solid rgba(255,255,255,0.12);
+      opacity: 0;
+    }
+    .metric-card:last-child { border-right: none; }
+    .metric-bars {
+      display: flex;
+      justify-content: center;
+      gap: 3px;
+      margin-bottom: 24px;
+    }
+    .metric-bars span {
+      height: 3px;
+      border-radius: 0;
+    }
+    .metric-bars span:nth-child(1) { width: 32px; background: rgba(255,255,255,0.9); }
+    .metric-bars span:nth-child(2) { width: 24px; background: rgba(255,255,255,0.55); }
+    .metric-bars span:nth-child(3) { width: 16px; background: rgba(255,255,255,0.3); }
+
+    .metric-value {
+      font-size: clamp(2.4rem, 4vw, 3.4rem);
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -0.03em;
+      display: block;
+      margin-bottom: 8px;
+      line-height: 1;
+    }
+    .metric-label {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.65);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── TESTIMONIALS ────────────────────────────────────────────────── */
+    .testi-section { background: var(--white); padding: 100px 0; }
+    .testi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      margin-top: 56px;
+    }
+    .testi-card {
+      padding: 36px;
+      border: 1px solid var(--border);
+      border-top: none;
+      position: relative;
+      opacity: 0;
+    }
+    .testi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .testi-card:nth-child(1)::before { background: var(--scarlet); }
+    .testi-card:nth-child(2)::before { background: var(--saffron); }
+    .testi-card:nth-child(3)::before { background: var(--blue); }
+    .testi-card:nth-child(4)::before { background: var(--emerald); }
+
+    .testi-stars {
+      color: var(--saffron);
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+    }
+    .testi-quote {
+      font-size: 0.9rem;
+      line-height: 1.8;
+      color: var(--text);
+      font-weight: 400;
+      margin-bottom: 28px;
+      font-style: italic;
+    }
+    .testi-meta { display: flex; align-items: center; gap: 12px; }
+    .testi-avatar {
+      width: 38px; height: 38px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .testi-card:nth-child(1) .testi-avatar { background: var(--scarlet); }
+    .testi-card:nth-child(2) .testi-avatar { background: var(--saffron); }
+    .testi-card:nth-child(3) .testi-avatar { background: var(--blue); }
+    .testi-card:nth-child(4) .testi-avatar { background: var(--emerald); }
+    .testi-name { font-weight: 700; font-size: 0.875rem; color: var(--navy); }
+    .testi-role { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── CTA Section ─────────────────────────────────────────────────── */
+    .cta-section { background: var(--navy); padding: 100px 0; color: #fff; }
+    .cta-inner {
+      max-width: 640px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .cta-inner h2 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .cta-inner p {
+      font-size: 0.95rem;
+      color: rgba(255,255,255,0.55);
+      margin-bottom: 40px;
+      line-height: 1.7;
+    }
+    .cta-vbars { margin: 32px auto 40px; display: flex; flex-direction: column; gap: 5px; align-items: center; }
+    .cta-vbars .vbar { margin: 0 auto; }
+    .cta-vbars .vbar-1 { background: rgba(255,255,255,0.7); }
+    .cta-vbars .vbar-2 { background: rgba(255,255,255,0.45); }
+    .cta-vbars .vbar-3 { background: rgba(255,255,255,0.25); }
+    .cta-vbars .vbar-4 { background: rgba(255,255,255,0.12); }
+
+    .cta-form {
+      display: flex;
+      gap: 0;
+      max-width: 440px;
+      margin: 0 auto 16px;
+    }
+    .cta-input {
+      flex: 1;
+      height: 52px;
+      padding: 0 20px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-right: none;
+      font-family: var(--font);
+      font-size: 0.9rem;
+      color: #fff;
+      outline: none;
+      border-radius: 0;
+    }
+    .cta-input::placeholder { color: rgba(255,255,255,0.3); }
+    .cta-input:focus { border-color: rgba(255,255,255,0.4); }
+    .cta-submit {
+      height: 52px;
+      padding: 0 28px;
+      background: var(--scarlet);
+      color: #fff;
+      border: none;
+      font-family: var(--font);
+      font-weight: 700;
+      font-size: 0.875rem;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: background 0.2s;
+      border-radius: 0;
+    }
+    .cta-submit:hover { background: #cc2f3b; }
+    .cta-disclaimer { font-size: 0.74rem; color: rgba(255,255,255,0.3); }
+
+    /* ── FOOTER ──────────────────────────────────────────────────────── */
+    footer {
+      background: var(--navy-deep);
+      padding: 40px 0;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .footer-copy {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.25);
+    }
+    .footer-links {
+      display: flex;
+      gap: 28px;
+    }
+    .footer-links a {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.3);
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: rgba(255,255,255,0.7); }
+
+    /* ── Responsive ──────────────────────────────────────────────────── */
+    @media (max-width: 960px) {
+      .nav-links { display: none; }
+      .hero-inner { grid-template-columns: 1fr; gap: 48px; }
+      .hero-sub { max-width: 100%; }
+      .features-grid { grid-template-columns: 1fr; }
+      .steps-grid { grid-template-columns: 1fr; background: none; gap: 16px; }
+      .fd-grid { grid-template-columns: 1fr; gap: 48px; }
+      .testi-grid { grid-template-columns: 1fr; }
+      .metrics-grid { grid-template-columns: 1fr; background: none; gap: 2px; }
+      .metric-card { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.12); }
+      .features-header { flex-direction: column; align-items: flex-start; gap: 24px; }
+      .cta-form { flex-direction: column; gap: 0; }
+      .cta-input { border-right: 1px solid rgba(255,255,255,0.15); border-bottom: none; }
+      .cta-submit { height: 48px; }
+    }
+
+    @media (max-width: 600px) {
+      .container { padding: 0 20px; }
+      .section { padding: 72px 0; }
+      .hero { padding-top: calc(var(--nav-h) + 40px); }
+      .hero-actions { flex-direction: column; align-items: flex-start; }
+      .hero-card { display: none; }
+      .cta-inner h2 { font-size: 1.9rem; }
+      .footer-inner { flex-direction: column; text-align: center; }
+      .footer-links { flex-wrap: wrap; justify-content: center; }
+      .hero-title { font-size: 2.4rem; }
+      .hero-inner { gap: 36px; }
+    }
+
+    @media (max-width: 960px) {
+      .hero-copy { text-align: center; }
+      .hero-sub { margin-left: auto; margin-right: auto; }
+      .hero-actions { justify-content: center; }
+      .hero-note { text-align: center; }
+      .hero-badge { display: flex; justify-content: center; }
+      .hero-vbars { display: flex; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── NAV ──────────────────────────────────────────────────────── -->
+  <nav id="main-nav">
+    <div class="nav-inner">
+      <a href="#" class="logo" aria-label="Lunar Grid">
+        <div class="logo-bars-icon" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="logo-text">
+          <span class="logo-lunar">LUNAR</span><span class="logo-grid">GRID</span>
+        </div>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how-it-works">How it works</a></li>
+        <li><a href="#testimonials">Customers</a></li>
+      </ul>
+
+      <a href="#register" class="btn btn-scarlet">Register Now</a>
+    </div>
+  </nav>
+
+
+  <!-- ── HERO ─────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-inner">
+
+        <div class="hero-copy">
+          <div class="hero-badge">Google Ads Automation</div>
+
+          <h1 class="hero-title">
+            <span class="hero-title-line">
+              <span class="hero-word">Ad</span>&nbsp;<span class="hero-word">Campaigns</span>
+            </span>
+            <span class="hero-title-line">
+              <span class="hero-word">at</span>&nbsp;<span class="hero-word hero-accent">Scale.</span>
+            </span>
+          </h1>
+
+          <div class="hero-vbars vbars" aria-hidden="true">
+            <div class="vbar vbar-1"></div>
+            <div class="vbar vbar-2"></div>
+            <div class="vbar vbar-3"></div>
+            <div class="vbar vbar-4"></div>
+          </div>
+
+          <p class="hero-sub">
+            Turn your location database into production-ready Google Ads CSV files.
+            Smart templates, automatic variant fallbacks, and bulk export ready for Google Ads Editor in seconds.
+          </p>
+
+          <div class="hero-actions">
+            <a href="#register" class="btn btn-scarlet btn-lg">
+              Register Now
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+            <a href="#features" class="btn btn-outline-dark btn-lg">See how it works</a>
+          </div>
+
+          <p class="hero-note">No credit card required &nbsp;·&nbsp; <span>Free during beta</span></p>
+        </div>
+
+        <!-- Hero Card Visual -->
+        <div class="hero-card" aria-hidden="true">
+          <div class="hero-card-bars">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="hero-card-header">
+            <span class="hero-card-label">lunar-grid › generate</span>
+            <span class="hero-card-tag">848 rows</span>
+          </div>
+          <div class="hero-card-body">
+            <div class="hc-section-label">Template</div>
+            <div class="hc-template">
+              <span class="hc-ph">{{city}}</span> Plumbers | Free Quote<br>
+              <span class="hc-dim">Call Now · Licensed &amp; Insured · Same Day</span>
+            </div>
+
+            <div class="hc-arrow">
+              <span class="hc-arrow-text">Generating</span>
+              <span class="hc-arrow-line"></span>
+              <span class="hc-badge">848 rows</span>
+            </div>
+
+            <div class="hc-rows">
+              <div class="hc-row">
+                <span>Paris Plumbers | Free Quote</span>
+                <span class="hc-ok">✓ 28 ch</span>
+              </div>
+              <div class="hc-row active-row">
+                <span>Lyon Plumbers | Free Quote</span>
+                <span class="hc-ok">✓ 27 ch</span>
+              </div>
+              <div class="hc-row">
+                <span>Marseille Plumbers | Free Quote</span>
+                <span class="hc-ok">✓ 30 ch</span>
+              </div>
+              <div class="hc-row">
+                <span>Bordeaux Plumbers | Free Quote</span>
+                <span class="hc-ok">✓ 30 ch</span>
+              </div>
+              <div class="hc-more">+ 844 more ad groups ...</div>
+            </div>
+          </div>
+          <div class="hero-card-footer">
+            <span class="hc-stat"><strong>848</strong> ad groups &nbsp;·&nbsp; <strong>0</strong> errors</span>
+            <a href="#register" class="btn btn-scarlet" style="font-size:0.78rem;padding:8px 16px">Export CSV</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ── TRUST BAR ─────────────────────────────────────────────────── -->
+  <div class="trust-bar">
+    <div class="container">
+      <div class="trust-bar-inner">
+        <span class="trust-label">Trusted by agencies managing</span>
+        <div class="trust-divider"></div>
+        <div class="trust-item"><span class="trust-dot" style="background:var(--scarlet)"></span> E-commerce</div>
+        <div class="trust-item"><span class="trust-dot" style="background:var(--saffron)"></span> Real Estate</div>
+        <div class="trust-item"><span class="trust-dot" style="background:var(--blue)"></span> Franchises</div>
+        <div class="trust-item"><span class="trust-dot" style="background:var(--emerald)"></span> Local Services</div>
+        <div class="trust-item"><span class="trust-dot" style="background:var(--scarlet)"></span> SaaS &amp; Tech</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ── FEATURES ──────────────────────────────────────────────────── -->
+  <section class="features-section" id="features">
+    <div class="container">
+
+      <div class="features-header">
+        <div class="section-header" style="color:#fff">
+          <div class="eyebrow" style="color:rgba(255,255,255,0.35)">
+            <span style="background:var(--saffron)"></span>
+            Core Capabilities
+          </div>
+          <h2>Everything you need to<br>launch at scale</h2>
+          <p>Lunar Grid is built for teams that manage location-based campaigns at scale, where manual copy-paste just doesn't cut it.</p>
+        </div>
+        <div class="vbars vbars-sm" aria-hidden="true" style="flex-shrink:0">
+          <div class="vbar vbar-1"></div>
+          <div class="vbar vbar-2"></div>
+          <div class="vbar vbar-3"></div>
+          <div class="vbar vbar-4"></div>
+        </div>
+      </div>
+
+      <div class="features-grid">
+
+        <div class="feat-card">
+          <div class="feat-card-num">01</div>
+          <div class="feat-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--saffron)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+          <h3>Template-Driven Ad Copy</h3>
+          <p>Define once, deploy everywhere. Write headlines, descriptions, and keywords with dynamic placeholders like <span class="code-tag">{{city}}</span> or <span class="code-tag">{{service}}</span>. Lunar Grid resolves them across your entire dataset automatically.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-card-num">02</div>
+          <div class="feat-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--saffron)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h3>Smart Variant Fallbacks</h3>
+          <p>When a headline hits Google's 30-character limit, Lunar Grid automatically falls back to your shorter variant. No truncated ads. No manual QA. Ship campaigns knowing every line is valid.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-card-num">03</div>
+          <div class="feat-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--saffron)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <h3>Bulk CSV Export</h3>
+          <p>One-click export generates CSV files formatted perfectly for Google Ads Editor. Import hundreds of campaigns in minutes, not days. Complete with keywords, sitelinks, callouts, and URLs.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-card-num">04</div>
+          <div class="feat-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--saffron)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          </div>
+          <h3>Connect Any Data Source</h3>
+          <p>Link any PostgreSQL table: French communes, US cities, product catalogs, franchise locations. Lunar Grid adapts to your data structure via configurable placeholder mappings.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-card-num">05</div>
+          <div class="feat-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--saffron)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h3>Custom Groups</h3>
+          <p>Hand-pick rows into named groups for special campaigns: flagship cities, seasonal markets, VIP zones. Custom groups get their own campaign name and are excluded from bulk generation.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-card-num">06</div>
+          <div class="feat-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--saffron)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+          </div>
+          <h3>Error Panel &amp; Live Preview</h3>
+          <p>Before you export, Lunar Grid surfaces every truncation warning, missing placeholder, and empty slot. Fix or skip individual rows inline, then export with confidence.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ── HOW IT WORKS ──────────────────────────────────────────────── -->
+  <section class="how-section" id="how-it-works">
+    <div class="container">
+      <div class="section-header center">
+        <div class="eyebrow">Workflow</div>
+        <h2>From database to<br>live campaign in three steps</h2>
+        <p>Lunar Grid fits into your existing workflow without a learning curve. Connect, build, export.</p>
+      </div>
+
+      <div class="steps-grid">
+        <div class="step">
+          <div class="step-num-bg" aria-hidden="true">01</div>
+          <div class="step-badge">01</div>
+          <h3>Connect your data</h3>
+          <p>Link a Supabase table containing your location data: cities, addresses, stores, or any structured dataset. Custom fields are mapped as dynamic placeholders.</p>
+        </div>
+
+        <div class="step">
+          <div class="step-num-bg" aria-hidden="true">02</div>
+          <div class="step-badge">02</div>
+          <h3>Build your templates</h3>
+          <p>Use the template editor to write ad copy with <span class="code-tag">{{placeholders}}</span>. Define headline variants, keyword match types, sitelinks, and callouts, all in one place.</p>
+        </div>
+
+        <div class="step">
+          <div class="step-num-bg" aria-hidden="true">03</div>
+          <div class="step-badge">03</div>
+          <h3>Preview &amp; export</h3>
+          <p>Review generated ad groups in real time. The error panel catches issues before export. When everything looks right, click Export CSV and import directly into Google Ads Editor.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ── FEATURE DETAIL: Variant Fallbacks ─────────────────────────── -->
+  <section class="fd-section bg-white">
+    <div class="container">
+      <div class="fd-grid">
+        <div class="fd-text fd-reveal">
+          <div class="eyebrow">Variant System</div>
+          <h3>Character limits enforced<br>automatically</h3>
+          <p>Google Ads is strict about character counts. Lunar Grid validates every field against the spec (30 chars for headlines, 90 for descriptions) and falls back to your ordered variants when the primary is too long.</p>
+          <ul class="fd-bullets">
+            <li>Up to 15 headline slots, each with variant fallbacks</li>
+            <li>Up to 4 description slots with independent variants</li>
+            <li>Keyword, callout, and sitelink validation included</li>
+            <li>Issues tab shows exactly which rows and fields need attention</li>
+          </ul>
+        </div>
+
+        <div class="fd-visual fd-reveal">
+          <div class="variant-visual">
+            <div class="vv-header">
+              <div class="vv-header-bars">
+                <span></span><span></span><span></span><span></span>
+              </div>
+              <div class="vv-header-label">Headline Slot 1 › Variants</div>
+            </div>
+            <div class="vv-body">
+              <div class="vv-row">
+                <span class="vv-row-label">Primary</span>
+                <span class="vv-row-text">{{city}} Emergency Plumbers</span>
+                <div class="vv-bar-wrap"><div class="vv-bar" style="width:80%"></div></div>
+                <span class="vv-tag ok">OK</span>
+              </div>
+              <div class="vv-row active">
+                <span class="vv-row-active-label">Fallback 1</span>
+                <span class="vv-row-text">{{city}} Plumbers 24/7</span>
+                <div class="vv-bar-wrap"><div class="vv-bar" style="width:65%;background:var(--blue)"></div></div>
+                <span class="vv-tag use">Used</span>
+              </div>
+              <div class="vv-row">
+                <span class="vv-row-label">Fallback 2</span>
+                <span class="vv-row-text">Local Plumbers Near You</span>
+                <div class="vv-bar-wrap"><div class="vv-bar" style="width:55%"></div></div>
+                <span class="vv-tag ok">OK</span>
+              </div>
+              <div class="vv-note">Saint-Germain-en-Laye: primary → fallback 1 (33 ch → 24 ch)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ── FEATURE DETAIL: Ad Preview ────────────────────────────────── -->
+  <section class="fd-section bg-cream">
+    <div class="container">
+      <div class="fd-grid">
+
+        <div class="fd-visual fd-reveal">
+          <div class="adp-visual">
+            <div class="adp-header">
+              <div class="adp-header-bars">
+                <span></span><span></span><span></span><span></span>
+              </div>
+              <div class="adp-header-label">Ad Preview &nbsp;·&nbsp; Paris, row #1</div>
+            </div>
+            <div class="adp-body">
+              <div class="google-ad">
+                <div class="ad-header-row">
+                  <span class="ad-badge">Ad</span>
+                  <span class="ad-url">example.com › plumbers › paris</span>
+                </div>
+                <div class="ad-title">Paris Plumbers | Free Quote | Same Day</div>
+                <div class="ad-desc">Licensed and insured plumbers in Paris. Available 24/7 for emergency repairs. Get your free quote today.</div>
+              </div>
+              <div class="google-ad">
+                <div class="ad-header-row">
+                  <span class="ad-badge">Ad</span>
+                  <span class="ad-url">example.com › plumbers › lyon</span>
+                </div>
+                <div class="ad-title">Lyon Plumbers | Free Quote | Same Day</div>
+                <div class="ad-desc">Expert plumbers in Lyon serving residential and commercial clients. Fast response, fair pricing, guaranteed work.</div>
+              </div>
+              <div class="google-ad">
+                <div class="ad-header-row">
+                  <span class="ad-badge">Ad</span>
+                  <span class="ad-url">example.com › plumbers › marseille</span>
+                </div>
+                <div class="ad-title">Marseille Plumbers | Free Quote | Same Day</div>
+                <div class="ad-desc">Top-rated plumbers in Marseille. Emergency and scheduled service available. Call now for a free estimate.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="fd-text fd-reveal">
+          <div class="eyebrow">Ad Preview</div>
+          <h3>See exactly what<br>searchers will see</h3>
+          <p>Before you export, Lunar Grid renders each ad group as a live Google Ads mockup. Headlines, descriptions, and URL paths are resolved from your data so you know exactly what goes live.</p>
+          <ul class="fd-bullets">
+            <li>Live preview updates as you edit templates</li>
+            <li>Cycle through rows to verify every city or location</li>
+            <li>URL paths resolved per row from your data</li>
+            <li>Spot rendering issues before they reach your account</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ── METRICS ────────────────────────────────────────────────────── -->
+  <section class="metrics-section">
+    <div class="container">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-bars">
+            <span></span><span></span><span></span>
+          </div>
+          <span class="metric-value" data-target="10000" data-suffix="+">10,000+</span>
+          <span class="metric-label">Ad groups generated</span>
+        </div>
+        <div class="metric-card">
+          <div class="metric-bars">
+            <span></span><span></span><span></span>
+          </div>
+          <span class="metric-value" data-target="500" data-suffix="+">500+</span>
+          <span class="metric-label">Template sets created</span>
+        </div>
+        <div class="metric-card">
+          <div class="metric-bars">
+            <span></span><span></span><span></span>
+          </div>
+          <span class="metric-value">&lt; 30s</span>
+          <span class="metric-label">Average export time</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ── TESTIMONIALS ───────────────────────────────────────────────── -->
+  <section class="testi-section" id="testimonials">
+    <div class="container">
+      <div class="section-header center">
+        <div class="eyebrow">From the field</div>
+        <h2>What PPC teams are saying</h2>
+      </div>
+
+      <div class="testi-grid">
+        <div class="testi-card">
+          <div class="testi-stars">★★★★★</div>
+          <p class="testi-quote">"We went from spending three days on campaign setup to under twenty minutes. Lunar Grid is non-negotiable for any agency running location-based campaigns."</p>
+          <div class="testi-meta">
+            <div class="testi-avatar">SK</div>
+            <div>
+              <div class="testi-name">Sarah K.</div>
+              <div class="testi-role">Head of Paid Search, Digital Agency</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testi-card">
+          <div class="testi-stars">★★★★★</div>
+          <p class="testi-quote">"The variant fallback system alone saved us hours of manual QA. Finally a tool that understands how Google Ads actually works, not just how marketers wish it worked."</p>
+          <div class="testi-meta">
+            <div class="testi-avatar">JR</div>
+            <div>
+              <div class="testi-name">James R.</div>
+              <div class="testi-role">Senior PPC Strategist, E-commerce Brand</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testi-card">
+          <div class="testi-stars">★★★★★</div>
+          <p class="testi-quote">"Managing 12 franchise locations used to mean 12 separate spreadsheets. With Lunar Grid, it's one template set and a single export. Absolute game changer."</p>
+          <div class="testi-meta">
+            <div class="testi-avatar">ML</div>
+            <div>
+              <div class="testi-name">Marie L.</div>
+              <div class="testi-role">Marketing Director, Franchise Group</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testi-card">
+          <div class="testi-stars">★★★★★</div>
+          <p class="testi-quote">"I connected our CRM data in 10 minutes and generated 400+ tailored ad groups before lunch. The live preview mode is exceptional. You see exactly what Google Ads will show."</p>
+          <div class="testi-meta">
+            <div class="testi-avatar">TC</div>
+            <div>
+              <div class="testi-name">Thomas C.</div>
+              <div class="testi-role">Freelance Google Ads Specialist</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ── CTA ────────────────────────────────────────────────────────── -->
+  <section class="cta-section" id="register">
+    <div class="container">
+      <div class="cta-inner">
+        <div class="eyebrow" style="color:rgba(255,255,255,0.35);justify-content:center">
+          Early Access
+        </div>
+        <h2>Launch faster.<br>Scale further.</h2>
+        <p>Lunar Grid is in beta. Register now for early access and be first to launch campaigns at scale.</p>
+
+        <div class="cta-vbars vbars" aria-hidden="true">
+          <div class="vbar vbar-1" style="width:180px"></div>
+          <div class="vbar vbar-2" style="width:140px"></div>
+          <div class="vbar vbar-3" style="width:100px"></div>
+          <div class="vbar vbar-4" style="width:68px"></div>
+        </div>
+
+        <form class="cta-form" onsubmit="handleRegister(event)">
+          <input type="email" class="cta-input" placeholder="your@email.com" required autocomplete="email" />
+          <button type="submit" class="cta-submit">Register Now</button>
+        </form>
+        <p class="cta-disclaimer">No spam. No credit card. Unsubscribe anytime.</p>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ── FOOTER ────────────────────────────────────────────────────── -->
+  <footer>
+    <div class="container">
+      <div class="footer-inner">
+        <a href="#" class="logo" aria-label="Lunar Grid">
+          <div class="logo-bars-icon" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="logo-text" style="font-size:0.9rem">
+            <span class="logo-lunar" style="color:rgba(255,255,255,0.6)">LUNAR</span><span class="logo-grid">GRID</span>
+          </div>
+        </a>
+
+        <p class="footer-copy">© 2026 Lunar Grid · Built for scale</p>
+
+        <ul class="footer-links">
+          <li><a href="#features">Features</a></li>
+          <li><a href="#how-it-works">How it works</a></li>
+          <li><a href="#register">Register</a></li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- ── Scripts ───────────────────────────────────────────────────── -->
+  <script>
+    function handleRegister(e) {
+      e.preventDefault();
+      const btn = e.target.querySelector('.cta-submit');
+      btn.textContent = '✓ You\'re on the list!';
+      btn.style.background = '#2A9D8F';
+      btn.disabled = true;
+      e.target.querySelector('input').disabled = true;
+    }
+
+    // Nav scroll state
+    const nav = document.getElementById('main-nav');
+    window.addEventListener('scroll', () => {
+      nav.style.borderBottomColor = window.scrollY > 20 ? 'var(--border)' : 'transparent';
+    }, { passive: true });
+  </script>
+
+  <script type="module">
+    import { animate, inView, stagger } from "https://cdn.jsdelivr.net/npm/motion@11.11.0/+esm";
+
+    // ── Page load animations ──────────────────────────────────────────
+
+    // Nav
+    animate('#main-nav',
+      { opacity: [0, 1], y: [-8, 0] },
+      { duration: 0.5, easing: 'ease-out' }
+    );
+
+    // Hero badge
+    animate('.hero-badge',
+      { opacity: [0, 1], y: [12, 0] },
+      { duration: 0.5, delay: 0.15, easing: [0.22, 1, 0.36, 1] }
+    );
+
+    // Hero headline words — staggered slide up
+    animate('.hero-word',
+      { opacity: [0, 1], y: [48, 0] },
+      { delay: stagger(0.09, { start: 0.25 }), duration: 0.65, easing: [0.22, 1, 0.36, 1] }
+    );
+
+    // Velocity bars — scaleX draw-in with stagger
+    const heroVbars = document.querySelectorAll('.hero-vbars .vbar');
+    heroVbars.forEach(bar => { bar.style.transformOrigin = 'left'; });
+    animate(heroVbars,
+      { scaleX: [0, 1] },
+      { delay: stagger(0.1, { start: 0.7 }), duration: 0.7, easing: [0.22, 1, 0.36, 1] }
+    );
+
+    // Hero sub + actions + note
+    animate('.hero-sub',
+      { opacity: [0, 1], y: [20, 0] },
+      { duration: 0.6, delay: 0.7, easing: [0.22, 1, 0.36, 1] }
+    );
+    animate('.hero-actions',
+      { opacity: [0, 1], y: [16, 0] },
+      { duration: 0.55, delay: 0.85, easing: [0.22, 1, 0.36, 1] }
+    );
+    animate('.hero-note',
+      { opacity: [0, 1] },
+      { duration: 0.5, delay: 1.0 }
+    );
+
+    // Hero card
+    animate('.hero-card',
+      { opacity: [0, 1], x: [48, 0] },
+      { duration: 0.75, delay: 0.4, easing: [0.22, 1, 0.36, 1] }
+    );
+
+    // Hero card rows stream in
+    const hcRows = document.querySelectorAll('.hc-row');
+    animate(hcRows,
+      { opacity: [0, 1], x: [12, 0] },
+      { delay: stagger(0.15, { start: 1.1 }), duration: 0.4, easing: 'ease-out' }
+    );
+
+    // Features section velocity bars (inView)
+    inView('.features-section', ({ target }) => {
+      const bars = target.querySelectorAll('.vbars-sm .vbar');
+      bars.forEach(bar => { bar.style.transformOrigin = 'left'; });
+      animate(bars,
+        { scaleX: [0, 1] },
+        { delay: stagger(0.1), duration: 0.7, easing: [0.22, 1, 0.36, 1] }
+      );
+    }, { amount: 0.1 });
+
+    // Feature cards staggered
+    inView('.features-grid', ({ target }) => {
+      animate(target.querySelectorAll('.feat-card'),
+        { opacity: [0, 1], y: [32, 0] },
+        { delay: stagger(0.08), duration: 0.55, easing: [0.22, 1, 0.36, 1] }
+      );
+    }, { amount: 0.1 });
+
+    // Steps
+    inView('.steps-grid', ({ target }) => {
+      animate(target.querySelectorAll('.step'),
+        { opacity: [0, 1], y: [28, 0] },
+        { delay: stagger(0.12), duration: 0.6, easing: [0.22, 1, 0.36, 1] }
+      );
+    }, { amount: 0.1 });
+
+    // Feature detail reveals
+    inView('.fd-reveal', ({ target }) => {
+      animate(target,
+        { opacity: [0, 1], y: [28, 0] },
+        { duration: 0.65, easing: [0.22, 1, 0.36, 1] }
+      );
+    }, { amount: 0.15 });
+
+    // Metrics
+    inView('.metrics-grid', ({ target }) => {
+      animate(target.querySelectorAll('.metric-card'),
+        { opacity: [0, 1], y: [24, 0], scale: [0.96, 1] },
+        { delay: stagger(0.1), duration: 0.6, easing: [0.22, 1, 0.36, 1] }
+      );
+
+      // Counter animation
+      target.querySelectorAll('.metric-value[data-target]').forEach(el => {
+        const target_val = parseInt(el.dataset.target);
+        const suffix = el.dataset.suffix || '';
+        const dur = 1800;
+        const start = performance.now();
+        function tick(now) {
+          const elapsed = now - start;
+          const progress = Math.min(elapsed / dur, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          el.textContent = Math.round(eased * target_val).toLocaleString() + suffix;
+          if (progress < 1) requestAnimationFrame(tick);
+        }
+        setTimeout(() => requestAnimationFrame(tick), 300);
+      });
+    }, { amount: 0.3 });
+
+    // Testimonials
+    inView('.testi-grid', ({ target }) => {
+      animate(target.querySelectorAll('.testi-card'),
+        { opacity: [0, 1], y: [24, 0] },
+        { delay: stagger(0.1), duration: 0.55, easing: [0.22, 1, 0.36, 1] }
+      );
+    }, { amount: 0.1 });
+
+    // CTA velocity bars
+    inView('.cta-section', ({ target }) => {
+      const bars = target.querySelectorAll('.cta-vbars .vbar');
+      bars.forEach(bar => { bar.style.transformOrigin = 'left'; });
+      animate(bars,
+        { scaleX: [0, 1] },
+        { delay: stagger(0.1), duration: 0.7, easing: [0.22, 1, 0.36, 1] }
+      );
+      animate(target.querySelector('.cta-inner'),
+        { opacity: [0, 1], y: [32, 0] },
+        { duration: 0.7, easing: [0.22, 1, 0.36, 1] }
+      );
+    }, { amount: 0.2 });
+
+  </script>
+
+</body>
+</html>
