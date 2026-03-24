@@ -85,39 +85,88 @@
       justify-content: space-between;
     }
 
-    /* Logo */
+    /* Logo — Moonshot M icon */
     .logo {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       cursor: pointer;
     }
-    .logo-bars-icon {
+    .logo-m-icon {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .logo-m-letter {
+      font-family: var(--font);
+      font-weight: 900;
+      font-size: 1.35rem;
+      color: var(--navy);
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .logo-m-bars {
       display: flex;
       flex-direction: column;
-      gap: 3px;
-      width: 22px;
+      gap: 2px;
+      width: 16px;
     }
-    .logo-bars-icon span {
+    .logo-m-bars span {
       display: block;
-      height: 3px;
-      border-radius: 0;
+      height: 2.5px;
     }
-    .logo-bars-icon span:nth-child(1) { background: var(--scarlet); width: 100%; }
-    .logo-bars-icon span:nth-child(2) { background: var(--saffron); width: 80%; }
-    .logo-bars-icon span:nth-child(3) { background: var(--blue);    width: 60%; }
-    .logo-bars-icon span:nth-child(4) { background: var(--emerald); width: 42%; }
+    .logo-m-bars span:nth-child(1) { background: var(--scarlet); width: 100%; }
+    .logo-m-bars span:nth-child(2) { background: var(--saffron); width: 80%; }
+    .logo-m-bars span:nth-child(3) { background: var(--blue);    width: 60%; }
+    .logo-m-bars span:nth-child(4) { background: var(--emerald); width: 42%; }
 
     .logo-text {
       font-family: var(--font);
       font-weight: 900;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       line-height: 1;
     }
     .logo-lunar { color: var(--navy); }
     .logo-grid  { color: var(--scarlet); }
+
+    /* Moonshot badge */
+    .moonshot-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font);
+      font-weight: 700;
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+    .moonshot-badge-bars {
+      display: flex;
+      gap: 1.5px;
+      align-items: flex-end;
+    }
+    .moonshot-badge-bars span {
+      display: block;
+      width: 2px;
+    }
+    .moonshot-badge-bars span:nth-child(1) { height: 10px; background: var(--scarlet); }
+    .moonshot-badge-bars span:nth-child(2) { height: 8px; background: var(--saffron); }
+    .moonshot-badge-bars span:nth-child(3) { height: 6px; background: var(--blue); }
+    .moonshot-badge-bars span:nth-child(4) { height: 4px; background: var(--emerald); }
+    .moonshot-wordmark {
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      color: var(--navy);
+    }
+    .hero-moonshot {
+      margin-top: 20px;
+      opacity: 0;
+    }
 
     .nav-links {
       display: flex;
@@ -227,25 +276,6 @@
       grid-template-columns: 1fr 1fr;
       gap: 80px;
       align-items: center;
-    }
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--scarlet);
-      font-weight: 500;
-      margin-bottom: 28px;
-      opacity: 0;
-    }
-    .hero-badge::before {
-      content: '';
-      width: 6px; height: 6px;
-      background: var(--scarlet);
-      border-radius: 50%;
     }
     .hero-title {
       font-size: clamp(2.6rem, 5.5vw, 4.4rem);
@@ -998,6 +1028,21 @@
       flex-wrap: wrap;
       gap: 20px;
     }
+    .footer-brand {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .footer-moonshot {
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.25);
+      font-weight: 400;
+    }
+    .footer-moonshot strong {
+      color: rgba(255,255,255,0.45);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
     .footer-copy {
       font-size: 0.78rem;
       color: rgba(255,255,255,0.25);
@@ -1049,7 +1094,7 @@
       .hero-sub { margin-left: auto; margin-right: auto; }
       .hero-actions { justify-content: center; }
       .hero-note { text-align: center; }
-      .hero-badge { display: flex; justify-content: center; }
+      .hero-moonshot { display: flex; justify-content: center; }
       .hero-vbars { display: flex; justify-content: center; }
     }
   </style>
@@ -1060,8 +1105,11 @@
   <nav id="main-nav">
     <div class="nav-inner">
       <a href="#" class="logo" aria-label="Lunar Grid">
-        <div class="logo-bars-icon" aria-hidden="true">
-          <span></span><span></span><span></span><span></span>
+        <div class="logo-m-icon" aria-hidden="true">
+          <span class="logo-m-letter">M</span>
+          <div class="logo-m-bars">
+            <span></span><span></span><span></span><span></span>
+          </div>
         </div>
         <div class="logo-text">
           <span class="logo-lunar">LUNAR</span><span class="logo-grid">GRID</span>
@@ -1085,8 +1133,6 @@
       <div class="hero-inner">
 
         <div class="hero-copy">
-          <div class="hero-badge">Google Ads Automation</div>
-
           <h1 class="hero-title">
             <span class="hero-title-line">
               <span class="hero-word">Ad</span>&nbsp;<span class="hero-word">Campaigns</span>
@@ -1117,6 +1163,14 @@
           </div>
 
           <p class="hero-note">No credit card required &nbsp;·&nbsp; <span>Free during beta</span></p>
+
+          <div class="hero-moonshot moonshot-badge">
+            <span>by</span>
+            <span class="moonshot-wordmark">MOONSHOT</span>
+            <div class="moonshot-badge-bars" aria-hidden="true">
+              <span></span><span></span><span></span><span></span>
+            </div>
+          </div>
         </div>
 
         <!-- Hero Card Visual -->
@@ -1538,14 +1592,20 @@
   <footer>
     <div class="container">
       <div class="footer-inner">
-        <a href="#" class="logo" aria-label="Lunar Grid">
-          <div class="logo-bars-icon" aria-hidden="true">
-            <span></span><span></span><span></span><span></span>
-          </div>
-          <div class="logo-text" style="font-size:0.9rem">
-            <span class="logo-lunar" style="color:rgba(255,255,255,0.6)">LUNAR</span><span class="logo-grid">GRID</span>
-          </div>
-        </a>
+        <div class="footer-brand">
+          <a href="#" class="logo" aria-label="Lunar Grid">
+            <div class="logo-m-icon" aria-hidden="true">
+              <span class="logo-m-letter" style="color:rgba(255,255,255,0.7)">M</span>
+              <div class="logo-m-bars">
+                <span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+            <div class="logo-text" style="font-size:0.9rem">
+              <span class="logo-lunar" style="color:rgba(255,255,255,0.6)">LUNAR</span><span class="logo-grid">GRID</span>
+            </div>
+          </a>
+          <p class="footer-moonshot">A <strong>Moonshot Growth</strong> product</p>
+        </div>
 
         <p class="footer-copy">© 2026 Lunar Grid · Built for scale</p>
 
@@ -1603,12 +1663,6 @@
       { duration: 0.5, easing: 'ease-out' }
     );
 
-    // Hero badge
-    animate('.hero-badge',
-      { opacity: [0, 1], y: [12, 0] },
-      { duration: 0.5, delay: 0.15, easing: [0.22, 1, 0.36, 1] }
-    );
-
     // Hero headline words — staggered slide up
     animate('.hero-word',
       { opacity: [0, 1], y: [48, 0] },
@@ -1635,6 +1689,10 @@
     animate('.hero-note',
       { opacity: [0, 1] },
       { duration: 0.5, delay: 1.0 }
+    );
+    animate('.hero-moonshot',
+      { opacity: [0, 0.7] },
+      { duration: 0.5, delay: 1.2 }
     );
 
     // Hero card
