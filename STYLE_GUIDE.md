@@ -67,6 +67,17 @@ Bar proportions (relative): 100% / 78% / 58% / 40%
 - **Flame Scarlet** for primary CTAs and emphasis
 - **Grid-based layouts** with generous whitespace
 - Animations: smooth easing `cubic-bezier(0.22, 1, 0.36, 1)`, staggered reveals
+- Root font-size: 18px for readability; UI mocks use 16px to stay compact
+
+### Animation Patterns
+- **Page-load**: Motion library (`animate`, `stagger`) for hero elements
+- **Scroll-triggered cards**: Motion `animate` via native `IntersectionObserver` (`onReveal` wrapper)
+- **Scroll-triggered detail sections**: Pure CSS transitions (`.fd-reveal` → `.fd-reveal.visible`)
+- **Typewriter effect**: Vanilla JS with `IntersectionObserver` trigger, used in trust bar to cycle category names in brand colors
+- **Velocity bar draw-in**: Motion `scaleX` animation with `transform-origin: left`
+
+### Trust Bar Typewriter
+The trust bar section uses a typewriter animation: "TRUSTED BY AGENCIES MANAGING **{category}**" where the category cycles through E-commerce (scarlet), Real Estate (saffron), Franchises (blue), Local Services (emerald), SaaS & Tech (scarlet) — each typed and deleted in a loop with a blinking cursor.
 
 ### CSS Variables (as used in landing page)
 ```css
