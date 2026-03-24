@@ -30,7 +30,7 @@
 
     /* ── Reset ───────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; font-size: 16px; }
+    html { scroll-behavior: smooth; font-size: 18px; }
     body {
       font-family: var(--font);
       background: var(--cream);
@@ -301,6 +301,7 @@
       overflow: hidden;
       box-shadow: 0 32px 80px rgba(26, 37, 68, 0.28), 0 8px 24px rgba(26,37,68,0.12);
       opacity: 0;
+      font-size: 16px; /* keep mock UI compact despite root bump */
     }
     .hero-card-bars {
       display: flex;
@@ -525,7 +526,6 @@
       transition: background 0.25s, transform 0.25s;
       position: relative;
       overflow: hidden;
-      opacity: 0;
     }
     .feat-card:hover { background: #1f2d57; }
     .feat-card:nth-child(1) { border-top-color: var(--scarlet); }
@@ -587,7 +587,6 @@
       padding: 48px 40px;
       position: relative;
       overflow: hidden;
-      opacity: 0;
     }
     .step-num-bg {
       position: absolute;
@@ -650,6 +649,17 @@
       align-items: center;
     }
 
+    /* CSS-based reveal for fd sections (no Motion dependency — Firefox-safe) */
+    .fd-reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1), transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .fd-reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
     .fd-text .eyebrow { color: var(--text-muted); }
     .fd-text h3 {
       font-size: clamp(1.4rem, 2.5vw, 1.9rem);
@@ -693,6 +703,7 @@
       background: var(--white);
       border: 1px solid var(--border);
       overflow: hidden;
+      font-size: 16px;
     }
     .bg-cream .variant-visual { background: var(--white); }
 
@@ -763,6 +774,7 @@
       background: var(--white);
       border: 1px solid var(--border);
       overflow: hidden;
+      font-size: 16px;
     }
     .adp-header {
       background: var(--navy);
@@ -784,25 +796,25 @@
       text-transform: uppercase;
     }
 
-    .adp-body { padding: 20px; background: #fff; display: flex; flex-direction: column; gap: 0; }
+    .adp-body { padding: 24px; background: #fff; display: flex; flex-direction: column; gap: 0; }
     .google-ad {
-      padding: 12px 0;
+      padding: 14px 0;
       border-bottom: 1px solid #e8eaed;
     }
     .google-ad:last-child { border-bottom: none; }
-    .ad-header-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+    .ad-header-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
     .ad-badge {
-      font-size: 10px;
+      font-size: 11px;
       border: 1px solid #006621;
       color: #006621;
-      padding: 1px 4px;
+      padding: 2px 5px;
       font-family: Arial, sans-serif;
       font-weight: 500;
       line-height: 1.4;
     }
-    .ad-url { font-size: 11px; color: #4d5156; font-family: Arial, sans-serif; }
-    .ad-title { font-size: 15px; color: #1a0dab; font-family: Arial, sans-serif; margin-bottom: 2px; }
-    .ad-desc  { font-size: 12px; color: #4d5156; font-family: Arial, sans-serif; line-height: 1.5; }
+    .ad-url { font-size: 13px; color: #4d5156; font-family: Arial, sans-serif; }
+    .ad-title { font-size: 18px; color: #1a0dab; font-family: Arial, sans-serif; margin-bottom: 3px; }
+    .ad-desc  { font-size: 14px; color: #4d5156; font-family: Arial, sans-serif; line-height: 1.55; }
 
     /* ── METRICS ─────────────────────────────────────────────────────── */
     .metrics-section {
@@ -820,7 +832,6 @@
       padding: 56px 40px;
       text-align: center;
       border-right: 1px solid rgba(255,255,255,0.12);
-      opacity: 0;
     }
     .metric-card:last-child { border-right: none; }
     .metric-bars {
@@ -866,7 +877,6 @@
       border: 1px solid var(--border);
       border-top: none;
       position: relative;
-      opacity: 0;
     }
     .testi-card::before {
       content: '';
@@ -1568,7 +1578,22 @@
   </script>
 
   <script type="module">
-    import { animate, inView, stagger } from "https://esm.sh/motion@latest";
+    import { animate, stagger } from "https://esm.sh/motion@11";
+
+    // ── Scroll-trigger utility (replaces Motion's broken inView) ─────
+    function onReveal(selector, callback, threshold = 0.1) {
+      const targets = document.querySelectorAll(selector);
+      if (!targets.length) return;
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            callback(entry.target);
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold });
+      targets.forEach(el => observer.observe(el));
+    }
 
     // ── Page load animations ──────────────────────────────────────────
 
@@ -1625,42 +1650,41 @@
       { delay: stagger(0.15, { start: 1.1 }), duration: 0.4, easing: 'ease-out' }
     );
 
-    // Features section velocity bars (inView)
-    inView('.features-section', ({ target }) => {
+    // ── Scroll-triggered animations ───────────────────────────────────
+
+    // Features section velocity bars
+    onReveal('.features-section', (target) => {
       const bars = target.querySelectorAll('.vbars-sm .vbar');
       bars.forEach(bar => { bar.style.transformOrigin = 'left'; });
       animate(bars,
         { scaleX: [0, 1] },
         { delay: stagger(0.1), duration: 0.7, easing: [0.22, 1, 0.36, 1] }
       );
-    }, { amount: 0.1 });
+    });
 
     // Feature cards staggered
-    inView('.features-grid', ({ target }) => {
+    onReveal('.features-grid', (target) => {
       animate(target.querySelectorAll('.feat-card'),
         { opacity: [0, 1], y: [32, 0] },
         { delay: stagger(0.08), duration: 0.55, easing: [0.22, 1, 0.36, 1] }
       );
-    }, { amount: 0.1 });
+    });
 
     // Steps
-    inView('.steps-grid', ({ target }) => {
+    onReveal('.steps-grid', (target) => {
       animate(target.querySelectorAll('.step'),
         { opacity: [0, 1], y: [28, 0] },
         { delay: stagger(0.12), duration: 0.6, easing: [0.22, 1, 0.36, 1] }
       );
-    }, { amount: 0.1 });
+    });
 
-    // Feature detail reveals
-    inView('.fd-reveal', ({ target }) => {
-      animate(target,
-        { opacity: [0, 1], y: [28, 0] },
-        { duration: 0.65, easing: [0.22, 1, 0.36, 1] }
-      );
-    }, { amount: 0.15 });
+    // Feature detail reveals (CSS transition — no Motion dependency, Firefox-safe)
+    onReveal('.fd-reveal', (target) => {
+      target.classList.add('visible');
+    }, 0.15);
 
     // Metrics
-    inView('.metrics-grid', ({ target }) => {
+    onReveal('.metrics-grid', (target) => {
       animate(target.querySelectorAll('.metric-card'),
         { opacity: [0, 1], y: [24, 0], scale: [0.96, 1] },
         { delay: stagger(0.1), duration: 0.6, easing: [0.22, 1, 0.36, 1] }
@@ -1681,18 +1705,18 @@
         }
         setTimeout(() => requestAnimationFrame(tick), 300);
       });
-    }, { amount: 0.3 });
+    }, 0.3);
 
     // Testimonials
-    inView('.testi-grid', ({ target }) => {
+    onReveal('.testi-grid', (target) => {
       animate(target.querySelectorAll('.testi-card'),
         { opacity: [0, 1], y: [24, 0] },
         { delay: stagger(0.1), duration: 0.55, easing: [0.22, 1, 0.36, 1] }
       );
-    }, { amount: 0.1 });
+    });
 
     // CTA velocity bars
-    inView('.cta-section', ({ target }) => {
+    onReveal('.cta-section', (target) => {
       const bars = target.querySelectorAll('.cta-vbars .vbar');
       bars.forEach(bar => { bar.style.transformOrigin = 'left'; });
       animate(bars,
@@ -1703,7 +1727,7 @@
         { opacity: [0, 1], y: [32, 0] },
         { duration: 0.7, easing: [0.22, 1, 0.36, 1] }
       );
-    }, { amount: 0.2 });
+    }, 0.2);
 
   </script>
 
